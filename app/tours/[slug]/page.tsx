@@ -250,14 +250,17 @@ export default async function TourDetailPage({ params }: { params: Params }) {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
             <div className="min-w-0">
               <Reveal y={16}>
-                <div className="mt-2 flex items-start justify-between gap-4 md:mt-4">
+                {/* Below lg the title wraps instead of scaling, so it gets the
+                    full width and the links drop under it — side by side, long
+                    words like "Discovery" got split mid-word on phones. */}
+                <div className="mt-2 flex flex-col gap-3 md:mt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
                   <AutoFitText
                     as="h1"
                     className="font-display text-h2-mobile md:text-h2-desktop text-midnight"
                   >
                     {tour.name}
                   </AutoFitText>
-                  <div className="flex shrink-0 items-center gap-4 pt-3 md:pt-4">
+                  <div className="flex shrink-0 items-center gap-4 lg:pt-4">
                     {!tour.comingSoon && (
                       <ReviewsLink
                         average={displayAggregate.average}
@@ -269,7 +272,7 @@ export default async function TourDetailPage({ params }: { params: Params }) {
                 </div>
               </Reveal>
 
-              <TourSaleAnnouncement />
+              <TourSaleAnnouncement tourName={tour.name} tourSlug={tour.slug} />
 
               <Reveal y={20} delay={80}>
                 <div className="mt-6 md:mt-8">

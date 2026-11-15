@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import ClaimSheet from "@/app/black-friday/_components/ClaimSheet";
+import InquireButton from "@/app/components/inquiry/InquireButton";
 import { useSaleBooking } from "@/app/black-friday/_components/useSaleBooking";
 import { formatGBP, availabilityLine, isSoldOut, statusLabel } from "@/lib/sale/ladder";
 import type { PublicTourAvailability, SalePageData, SalePageTour } from "@/lib/sale/types";
@@ -160,9 +161,10 @@ function SaleTag() {
 
 /**
  * The announcement near the top of the tour page. On phones the booking card
- * sits far below it, so while slots are free it can start the hold itself.
+ * sits far below it, so while slots are free it shows the sale price and can
+ * start the hold itself, with Inquire now under it as on the card.
  */
-export function TourSaleAnnouncement() {
+export function TourSaleAnnouncement({ tourName, tourSlug }: { tourName: string; tourSlug: string }) {
   const sale = useContext(TourSaleContext);
   if (!sale) return null;
 
@@ -178,16 +180,33 @@ export function TourSaleAnnouncement() {
     <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <SaleTag />
+        {sale.bookable && (
+          // The booking card shows the price on wide screens; phones see it here.
+          <div className="lg:hidden">
+            <SalePrice sale={sale} />
+            {sale.tour.pricesVary && (
+              <p className="mt-1 font-body text-b4-mobile text-dark-gray">Prices vary by date</p>
+            )}
+          </div>
+        )}
         <p className="mt-2 font-body text-b4-mobile font-medium text-midnight md:text-b4-desktop">{message}</p>
       </div>
       {sale.bookable && (
-        <button
-          type="button"
-          onClick={sale.open}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-crimson-red px-5 py-2.5 font-body text-b4-desktop font-bold text-white transition-colors hover:bg-light-red lg:hidden"
-        >
-          {ctaLabel(sale)}
-        </button>
+        <div className="flex shrink-0 flex-col gap-2 lg:hidden">
+          <button
+            type="button"
+            onClick={sale.open}
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-crimson-red px-5 py-2.5 font-body text-b4-desktop font-bold text-white transition-colors hover:bg-light-red"
+          >
+            {ctaLabel(sale)}
+          </button>
+          <InquireButton
+            tourName={tourName}
+            tourSlug={tourSlug}
+            location="tour_page_top"
+            className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-crimson-red bg-white px-5 py-2 font-body text-b4-desktop font-bold text-crimson-red transition-colors hover:bg-crimson-red hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-crimson-red"
+          />
+        </div>
       )}
     </div>
   );

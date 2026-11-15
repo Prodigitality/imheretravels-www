@@ -8,7 +8,7 @@ import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
 
 /** Where the button sits, sent with the enquiry and the analytics event. */
-export type InquireLocation = "sale_card" | "tour_page" | "tour_mobile_bar";
+export type InquireLocation = "sale_card" | "tour_page" | "tour_page_top" | "tour_mobile_bar";
 
 const EMPTY = {
   firstName: "",

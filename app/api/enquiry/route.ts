@@ -41,7 +41,7 @@ type Payload = {
   acceptedPrivacy?: unknown;
   tourName?: unknown;
   tourSlug?: unknown;
-  /** Where the button was: "sale_card", "tour_page", "tour_mobile_bar". */
+  /** Where the button was: "sale_card", "tour_page", "tour_page_top", "tour_mobile_bar". */
   location?: unknown;
   /** Honeypot. */
   website?: unknown;
