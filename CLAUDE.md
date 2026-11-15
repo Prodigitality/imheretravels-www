@@ -150,6 +150,12 @@ API routes re-clean them (`lib/analytics/utm.ts`) and save them on the
 enquiry as `source.utm` and in the team email. They are kept in memory,
 which needs no consent and covers the in-app path to the form, and also in
 sessionStorage (survives a reload) only when cookies are accepted.
+Links to the admin booking form get the visit's UTMs added as they are
+followed (`withUtm()`: a document click listener in `UtmCapture`, plus the
+Black Friday auto-redirect in `useSaleBooking`); a link that already has any
+`utm_*` is left alone. The admin form saves them on the reservation
+(`stripePayments` doc, field `utm`). Admin → Enquiries shows them as
+"Campaign (UTM)".
 
 **Server events in Meta Events Manager are expected.** They come from
 Meta's own "Conversions API with Meta", which Meta connects from its side and

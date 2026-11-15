@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { trackEvent } from "@/lib/analytics/track";
+import { withUtm } from "@/lib/analytics/utm-client";
 import { createLiveSaleApi, type ClaimResult, type SaleApi } from "@/lib/sale/api";
 import {
   AUTO_REDIRECT_DELAY_MS,
@@ -287,7 +288,7 @@ export function useSaleBooking({
       void refresh();
       if (res.hold.checkoutMode === "auto" && !mock) {
         setRedirecting(true);
-        const href = reservationFormHref(res.hold.tourSlug, res.holdParam, tourDate);
+        const href = withUtm(reservationFormHref(res.hold.tourSlug, res.holdParam, tourDate));
         redirectTimer.current = window.setTimeout(() => {
           window.location.assign(href);
         }, AUTO_REDIRECT_DELAY_MS);

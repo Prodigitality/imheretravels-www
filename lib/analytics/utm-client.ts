@@ -9,6 +9,9 @@ import { cleanUtm, UTM_KEYS, type Utm } from "@/lib/analytics/utm";
  * without reloading, so the landing page's UTMs are still there when the form
  * is sent. Memory needs no consent. They are also copied to sessionStorage, so
  * they survive a reload, but only when the visitor has accepted cookies.
+ *
+ * Links to the booking form (admin.imheretravels.com/reservation-booking-form)
+ * carry them across with `withUtm()`, so a booking is saved with them too.
  */
 
 const STORAGE_KEY = "iht_utm";
@@ -52,4 +55,40 @@ export function getUtm(): Utm | null {
   } catch {
     return null;
   }
+}
+
+const BOOKING_FORM_PATH = /^\/reservation-booking-form(\/|$)/;
+
+/**
+ * Adds the visit's UTMs to a booking-form link. Other links, and links that
+ * already carry any UTM (someone tagged them on purpose), are left as they are,
+ * so two campaigns never get mixed in one URL.
+ */
+export function withUtm(href: string): string {
+  const utm = getUtm();
+  if (!utm || typeof window === "undefined") return href;
+  try {
+    const url = new URL(href, window.location.href);
+    if (!BOOKING_FORM_PATH.test(url.pathname)) return href;
+    if (UTM_KEYS.some((key) => url.searchParams.has(key))) return href;
+    for (const [key, value] of Object.entries(utm)) {
+      if (value) url.searchParams.set(key, value);
+    }
+    return url.toString();
+  } catch {
+    return href;
+  }
+}
+
+/**
+ * Rewrites a booking-form link just before the browser follows it: clicks,
+ * middle-clicks, and right-click "open in new tab" / "copy link".
+ */
+export function decorateBookingLinkOnInteraction(event: Event): void {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const link = target.closest("a[href]");
+  if (!(link instanceof HTMLAnchorElement)) return;
+  const next = withUtm(link.href);
+  if (next !== link.href) link.href = next;
 }
