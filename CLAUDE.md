@@ -135,6 +135,22 @@ unfiltered History Change double-counts). Both need `ad_storage` consent. The
 ad agency (WaveX) counts conversions by URL: `/enquiry-sent`,
 `/message-sent` and `admin.imheretravels.com/reservation-booking-form/booking-confirmed`.
 
+The Base tag sets `fbq.allowDuplicatePageViews = true` (container Version 6,
+2026-11-16). Never remove it: Meta's pixel sends only one PageView per page
+load and silently drops the rest, and all three conversion URLs above are
+reached without a reload. Without it, GTM Preview still shows the page-change
+tag as "Fired" but nothing reaches Meta, so test changes in DevTools Network
+(filter `facebook.com/tr`, look for `ev=PageView` with the right `dl`), not
+in Tag Assistant alone.
+
+**UTMs on leads.** `UtmCapture` (root layout) reads `utm_source`,
+`utm_medium`, `utm_campaign`, `utm_term`, `utm_content` from the landing URL
+(`lib/analytics/utm-client.ts`). The enquiry and contact forms send them, the
+API routes re-clean them (`lib/analytics/utm.ts`) and save them on the
+enquiry as `source.utm` and in the team email. They are kept in memory,
+which needs no consent and covers the in-app path to the form, and also in
+sessionStorage (survives a reload) only when cookies are accepted.
+
 **Server events in Meta Events Manager are expected.** They come from
 Meta's own "Conversions API with Meta", which Meta connects from its side and
 which copies the pixel's browser events (confirmed with WaveX 2026-11-13).

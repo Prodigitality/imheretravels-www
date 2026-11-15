@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
+import { getUtm } from "@/lib/analytics/utm-client";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -42,7 +43,7 @@ export default function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, utm: getUtm() }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

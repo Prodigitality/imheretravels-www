@@ -6,6 +6,7 @@ import { useId, useState, type FormEvent, type ReactNode } from "react";
 import BottomSheet from "@/app/black-friday/_components/BottomSheet";
 import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
+import { getUtm } from "@/lib/analytics/utm-client";
 
 /** Where the button sits, sent with the enquiry and the analytics event. */
 export type InquireLocation = "sale_card" | "tour_page" | "tour_page_top" | "tour_mobile_bar";
@@ -103,7 +104,7 @@ function InquireSheet({
       const res = await fetch("/api/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, tourName, tourSlug, location }),
+        body: JSON.stringify({ ...form, tourName, tourSlug, location, utm: getUtm() }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error || "Failed to send your enquiry");

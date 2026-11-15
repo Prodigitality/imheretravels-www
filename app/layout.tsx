@@ -8,6 +8,7 @@ import GoogleTagManager, {
 } from "@/app/components/global/GoogleTagManager";
 import ConsentModeDefault from "@/app/components/global/ConsentModeDefault";
 import ConsentBanner from "@/app/components/global/ConsentBanner";
+import UtmCapture from "@/app/components/global/UtmCapture";
 import { getAllTours, getHostedTours } from "@/lib/tours-firestore";
 import { getAllHosts } from "@/lib/resident-hosts-firestore";
 import { getAllDestinations } from "@/lib/destinations-firestore";
@@ -229,6 +230,7 @@ export default async function RootLayout({
       <body className="min-h-screen flex flex-col">
         <GoogleTagManagerNoScript />
         <GoogleTagManager />
+        <UtmCapture />
         <Header
           tourLinks={tourLinks}
           hostedTourLinks={hostedTourLinks}

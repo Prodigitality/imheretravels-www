@@ -17,6 +17,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { escapeHtml, formatAddress, getGmailAccessToken, sendGmail } from "@/lib/gmail";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
+import { cleanUtm, utmRows } from "@/lib/analytics/utm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +44,8 @@ type Payload = {
   tourSlug?: unknown;
   /** Where the button was: "sale_card", "tour_page", "tour_page_top", "tour_mobile_bar". */
   location?: unknown;
+  /** UTM parameters from the visitor's landing URL (lib/analytics/utm.ts). */
+  utm?: unknown;
   /** Honeypot. */
   website?: unknown;
 };
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
   const tourSlug = /^[a-z0-9-]{1,120}$/.test(str(p.tourSlug, 120)) ? str(p.tourSlug, 120) : "";
   const location = /^[a-z_]{1,40}$/.test(str(p.location, 40)) ? str(p.location, 40) : "";
   const subscribe = p.subscribe === true;
+  const utm = cleanUtm(p.utm);
 
   if (!firstName || !lastName || !email || !phone) {
     return bad("Please fill in your name, email and phone number.");
@@ -114,6 +118,7 @@ export async function POST(request: Request) {
         location: location || null,
         page: str(request.headers.get("referer"), 300),
         userAgent: str(request.headers.get("user-agent"), 300),
+        utm,
       },
       emails: { team: "pending" },
       mailchimp: subscribe ? "pending" : "not_requested",
@@ -136,6 +141,7 @@ export async function POST(request: Request) {
       ["Phone", phone],
       ["Message", message || "(none)"],
       ["Subscribed to updates", subscribe ? "Yes" : "No"],
+      ...utmRows(utm),
     ];
     const tourUrl = tourSlug ? `https://www.imheretravels.com/tours/${tourSlug}` : "";
     const adminUrl = `https://admin.imheretravels.com/enquiries?id=${ref.id}`;

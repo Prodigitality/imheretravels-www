@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
+import { cleanUtm, utmRows } from "@/lib/analytics/utm";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,8 @@ type ContactPayload = {
   message?: string;
   subscribe?: boolean;
   acceptedPrivacy?: boolean;
+  /** UTM parameters from the visitor's landing URL (lib/analytics/utm.ts). */
+  utm?: unknown;
 };
 
 function escapeHtml(value: string): string {
@@ -140,6 +143,8 @@ export async function POST(request: Request) {
   }
 
   const fullName = `${firstName} ${lastName}`.trim();
+  const utm = cleanUtm(payload.utm);
+  const utmLines = utmRows(utm);
 
   // Saved first, to the same `enquiries` list as the tour "Inquire now" form
   // (admin → Enquiries), so a message is never lost to a Gmail outage.
@@ -167,6 +172,7 @@ export async function POST(request: Request) {
         location: null,
         page: (request.headers.get("referer") ?? "").slice(0, 300),
         userAgent: (request.headers.get("user-agent") ?? "").slice(0, 300),
+        utm,
       },
       emails: { team: "pending" },
       mailchimp: payload.subscribe ? "pending" : "not_requested",
@@ -186,6 +192,7 @@ export async function POST(request: Request) {
     `Phone: ${phone}`,
     `Message: ${message}`,
     payload.subscribe ? "Subscribed to updates: Yes" : "Subscribed to updates: No",
+    ...utmLines.map(([k, v]) => `${k}: ${v}`),
     adminUrl ? `Open in admin: ${adminUrl}` : "",
   ]
     .filter(Boolean)
@@ -199,6 +206,7 @@ export async function POST(request: Request) {
       <p><strong>Phone:</strong> ${escapeHtml(phone)}</p>
       <p><strong>Message:</strong><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>
       <p><strong>Subscribed to updates:</strong> ${payload.subscribe ? "Yes" : "No"}</p>
+      ${utmLines.map(([k, v]) => `<p><strong>${k}:</strong> ${escapeHtml(v)}</p>`).join("\n      ")}
       ${adminUrl ? `<p><a href="${adminUrl}">Open in admin</a></p>` : ""}
     </div>
   `.trim();
