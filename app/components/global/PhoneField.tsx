@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Search } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
@@ -107,6 +107,9 @@ const flagStyle = {
 /**
  * Country code dropdown (flags; UK and Ireland on top) in front of the number.
  * Same look and keyboard handling as `NationalitySelect`.
+ *
+ * The number is checked when the visitor leaves the field (and on submit, via
+ * `invalid`); the message clears as soon as the number is valid.
  */
 export default function PhoneField({
   phone,
@@ -127,6 +130,8 @@ export default function PhoneField({
   const searchRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
+  const errorId = useId();
+  const [left, setLeft] = useState(false);
 
   const close = useCallback(() => setOpen(false), []);
   useListboxNav({ open, listRef, triggerRef, onClose: close, autoFocus: false });
@@ -157,7 +162,9 @@ export default function PhoneField({
   const others = rest.filter(matches);
   const selected = [...priority, ...rest].find((o) => o.code === phone.country);
 
-  const borderClass = invalid ? "border-crimson-red" : open ? "border-midnight" : "border-grey/60";
+  const hasNumber = phone.number.trim() !== "";
+  const showError = !phone.e164 && (invalid || (left && hasNumber));
+  const borderClass = showError ? "border-crimson-red" : open ? "border-midnight" : "border-grey/60";
 
   function renderOption(option: PhoneCountryOption) {
     const isSelected = option.code === phone.country;
@@ -209,16 +216,24 @@ export default function PhoneField({
         <input
           type="tel"
           aria-label="Phone number"
-          aria-invalid={invalid || undefined}
+          aria-invalid={showError || undefined}
+          aria-describedby={showError && hasNumber ? errorId : undefined}
           autoComplete="tel-national"
           inputMode="tel"
           required
           value={phone.number}
           onChange={(e) => phone.setNumber(e.target.value)}
+          onBlur={() => setLeft(true)}
           placeholder={placeholder}
-          className={`${inputClass} min-w-0 flex-1 ${invalid ? "!border-crimson-red" : ""}`}
+          className={`${inputClass} min-w-0 flex-1 ${showError ? "!border-crimson-red" : ""}`}
         />
       </div>
+
+      {showError && hasNumber && (
+        <p id={errorId} className="mt-1.5 font-body text-b4-mobile text-crimson-red md:text-b4-desktop">
+          That doesn&apos;t look like a valid {selected?.name ?? ""} number. Check the digits or the country code.
+        </p>
+      )}
 
       <AnimatePresence>
         {open && (
