@@ -157,6 +157,14 @@ Black Friday auto-redirect in `useSaleBooking`); a link that already has any
 (`stripePayments` doc, field `utm`). Admin → Enquiries shows them as
 "Campaign (UTM)".
 
+**Phone numbers on leads.** The enquiry and contact forms use `PhoneField`
+(`app/components/global/PhoneField.tsx`): a country code dropdown with flags,
+UK and Ireland first, defaulting to the visitor's country from `/api/geo`
+(Vercel's `x-vercel-ip-country`; UK when unknown). The team follows up on
+WhatsApp, so the number is required and sent as E.164 (`+447911123456`); the
+API routes reject anything else (`normalizePhone` in `lib/phone.ts`). The
+admin booking form's WhatsApp picker follows the same order and default.
+
 **Server events in Meta Events Manager are expected.** They come from
 Meta's own "Conversions API with Meta", which Meta connects from its side and
 which copies the pixel's browser events (confirmed with WaveX 2026-11-13).

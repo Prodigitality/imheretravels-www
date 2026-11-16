@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { cleanUtm, utmRows } from "@/lib/analytics/utm";
+import { normalizePhone } from "@/lib/phone";
 
 export const runtime = "nodejs";
 
@@ -125,15 +126,26 @@ export async function POST(request: Request) {
   const firstName = payload.firstName?.trim() ?? "";
   const lastName = payload.lastName?.trim() ?? "";
   const email = payload.email?.trim() ?? "";
-  const phone = payload.phone?.trim() ?? "";
+  const phoneRaw = typeof payload.phone === "string" ? payload.phone.trim() : "";
   const message = payload.message?.trim() ?? "";
 
-  if (!firstName || !lastName || !email || !phone || !message) {
+  if (!firstName || !lastName || !email || !phoneRaw || !message) {
     return NextResponse.json(
       { error: "All fields are required." },
       { status: 400 },
     );
   }
+
+  // Full international number (the form's country picker adds the code), so
+  // the team can follow up on WhatsApp.
+  const phoneParsed = normalizePhone(phoneRaw);
+  if (!phoneParsed) {
+    return NextResponse.json(
+      { error: "Please enter your phone number with its country code, e.g. +44 7911 123456." },
+      { status: 400 },
+    );
+  }
+  const phone = phoneParsed.e164;
 
   if (!payload.acceptedPrivacy) {
     return NextResponse.json(
@@ -189,7 +201,7 @@ export async function POST(request: Request) {
   const text = [
     `Name: ${fullName}`,
     `Email Address: ${email}`,
-    `Phone: ${phone}`,
+    `Phone: ${phoneParsed.display}`,
     `Message: ${message}`,
     payload.subscribe ? "Subscribed to updates: Yes" : "Subscribed to updates: No",
     ...utmLines.map(([k, v]) => `${k}: ${v}`),
@@ -203,7 +215,7 @@ export async function POST(request: Request) {
       <h2 style="margin:0 0 16px 0;">New Website Enquiry</h2>
       <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
       <p><strong>Email Address:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
-      <p><strong>Phone:</strong> ${escapeHtml(phone)}</p>
+      <p><strong>Phone:</strong> ${escapeHtml(phoneParsed.display)}</p>
       <p><strong>Message:</strong><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>
       <p><strong>Subscribed to updates:</strong> ${payload.subscribe ? "Yes" : "No"}</p>
       ${utmLines.map(([k, v]) => `<p><strong>${k}:</strong> ${escapeHtml(v)}</p>`).join("\n      ")}

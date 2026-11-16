@@ -7,6 +7,7 @@ import BottomSheet from "@/app/black-friday/_components/BottomSheet";
 import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
 import { getUtm } from "@/lib/analytics/utm-client";
+import PhoneField, { usePhoneField } from "@/app/components/global/PhoneField";
 
 /** Where the button sits, sent with the enquiry and the analytics event. */
 export type InquireLocation = "sale_card" | "tour_page" | "tour_page_top" | "tour_mobile_bar";
@@ -15,7 +16,6 @@ const EMPTY = {
   firstName: "",
   lastName: "",
   email: "",
-  phone: "",
   message: "",
   subscribe: false,
   acceptedPrivacy: false,
@@ -83,6 +83,8 @@ function InquireSheet({
   const [form, setForm] = useState(EMPTY);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const phone = usePhoneField();
+  const [phoneInvalid, setPhoneInvalid] = useState(false);
 
   function update<K extends keyof typeof EMPTY>(key: K, value: (typeof EMPTY)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -91,10 +93,17 @@ function InquireSheet({
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.phone.trim()) {
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !phone.number.trim()) {
       setError("Please fill in your name, email and phone number.");
+      setPhoneInvalid(!phone.number.trim());
       return;
     }
+    if (!phone.e164) {
+      setError("Please check your phone number and its country code.");
+      setPhoneInvalid(true);
+      return;
+    }
+    setPhoneInvalid(false);
     if (!form.acceptedPrivacy) {
       setError("Please accept our privacy policy to continue.");
       return;
@@ -104,7 +113,7 @@ function InquireSheet({
       const res = await fetch("/api/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, tourName, tourSlug, location, utm: getUtm() }),
+        body: JSON.stringify({ ...form, phone: phone.e164, tourName, tourSlug, location, utm: getUtm() }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error || "Failed to send your enquiry");
@@ -177,16 +186,7 @@ function InquireSheet({
           placeholder={contactForm.fields.email}
           className={input}
         />
-        <input
-          type="tel"
-          aria-label="Phone number"
-          autoComplete="tel"
-          required
-          value={form.phone}
-          onChange={(e) => update("phone", e.target.value)}
-          placeholder={contactForm.fields.phone}
-          className={input}
-        />
+        <PhoneField phone={phone} inputClass={input} placeholder={contactForm.fields.phone} invalid={phoneInvalid} />
         <textarea
           aria-label="Message (optional)"
           value={form.message}

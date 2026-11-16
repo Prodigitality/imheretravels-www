@@ -44,6 +44,9 @@ export default async function EnquirySentPage({ searchParams }: { searchParams: 
               ? `Our team will be in touch soon about ${tour.name}. Keep an eye on your inbox and phone.`
               : "Our team will be in touch soon. Keep an eye on your inbox and phone."}
           </p>
+          <p className="mt-2 max-w-xl font-body text-b2-mobile text-dark-gray md:text-b2-desktop">
+            If you don&apos;t see our email, it&apos;s worth checking your junk or promotions folder.
+          </p>
           <div className="mt-8 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             {tour && (
               <Link

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
 import { getUtm } from "@/lib/analytics/utm-client";
+import PhoneField, { usePhoneField } from "@/app/components/global/PhoneField";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -17,11 +18,12 @@ export default function ContactForm() {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
     message: "",
     subscribe: false,
     acceptedPrivacy: false,
   });
+  const phone = usePhoneField();
+  const [phoneInvalid, setPhoneInvalid] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -30,6 +32,18 @@ export default function ContactForm() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage("");
+
+    if (!phone.e164) {
+      setStatus("error");
+      setPhoneInvalid(true);
+      setErrorMessage(
+        phone.number.trim()
+          ? "Please check your phone number and its country code."
+          : "Please enter your phone number.",
+      );
+      return;
+    }
+    setPhoneInvalid(false);
 
     if (!form.acceptedPrivacy) {
       setStatus("error");
@@ -43,7 +57,7 @@ export default function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, utm: getUtm() }),
+        body: JSON.stringify({ ...form, phone: phone.e164, utm: getUtm() }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -91,14 +105,7 @@ export default function ContactForm() {
           placeholder={contactForm.fields.email}
           className={inputClass}
         />
-        <input
-          type="tel"
-          required
-          value={form.phone}
-          onChange={(e) => update("phone", e.target.value)}
-          placeholder={contactForm.fields.phone}
-          className={inputClass}
-        />
+        <PhoneField phone={phone} inputClass={inputClass} placeholder={contactForm.fields.phone} invalid={phoneInvalid} />
       </div>
       <textarea
         required

@@ -18,6 +18,7 @@ import { escapeHtml, formatAddress, getGmailAccessToken, sendGmail } from "@/lib
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { cleanUtm, utmRows } from "@/lib/analytics/utm";
+import { normalizePhone } from "@/lib/phone";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,7 +71,8 @@ export async function POST(request: Request) {
   const firstName = str(p.firstName, 100);
   const lastName = str(p.lastName, 100);
   const email = str(p.email, 200).toLowerCase();
-  const phone = str(p.phone, 50);
+  const phoneRaw = str(p.phone, 50);
+  const phoneParsed = normalizePhone(phoneRaw);
   const message = str(p.message, 5000);
   const tourName = str(p.tourName, 200);
   const tourSlug = /^[a-z0-9-]{1,120}$/.test(str(p.tourSlug, 120)) ? str(p.tourSlug, 120) : "";
@@ -78,9 +80,15 @@ export async function POST(request: Request) {
   const subscribe = p.subscribe === true;
   const utm = cleanUtm(p.utm);
 
-  if (!firstName || !lastName || !email || !phone) {
+  if (!firstName || !lastName || !email || !phoneRaw) {
     return bad("Please fill in your name, email and phone number.");
   }
+  // Full international number (the form's country picker adds the code), so
+  // the team can follow up on WhatsApp.
+  if (!phoneParsed) {
+    return bad("Please enter your phone number with its country code, e.g. +44 7911 123456.");
+  }
+  const phone = phoneParsed.e164;
   if (!EMAIL_RE.test(email)) return bad("Please enter a valid email address.");
   if (p.acceptedPrivacy !== true) return bad("Please accept our privacy policy to continue.");
 
@@ -138,7 +146,7 @@ export async function POST(request: Request) {
       ["Tour", tourName || "Not specified"],
       ["Name", fullName],
       ["Email", email],
-      ["Phone", phone],
+      ["Phone", phoneParsed.display],
       ["Message", message || "(none)"],
       ["Subscribed to updates", subscribe ? "Yes" : "No"],
       ...utmRows(utm),

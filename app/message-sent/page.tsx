@@ -35,6 +35,9 @@ export default function MessageSentPage() {
           <p className="mt-4 max-w-xl font-body text-b2-mobile text-dark-gray md:text-b2-desktop">
             We&apos;ve got your message and our team will be in touch soon. Keep an eye on your inbox and phone.
           </p>
+          <p className="mt-2 max-w-xl font-body text-b2-mobile text-dark-gray md:text-b2-desktop">
+            If you don&apos;t see our email, it&apos;s worth checking your junk or promotions folder.
+          </p>
           <div className="mt-8 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             <Link
               href="/tours"
