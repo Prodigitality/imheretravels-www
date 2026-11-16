@@ -66,13 +66,16 @@ export function usePhoneField() {
     setCountryState(code);
   }, []);
 
+  // Digits only: letters, spaces and symbols never reach the box (a "+" is
+  // kept at the very start, for a full international number).
   // A pasted full number ("+353 87…" or "00353 87…") moves the picker to its
   // country. Codes shared by several countries (+44 also covers Guernsey,
   // Jersey…) keep the current pick when it matches, else the main country.
+  // A typed country code without "+" ("44 7911…") is dropped once valid.
   const setNumber = useCallback(
     (raw: string) => {
-      const trimmed = raw.trim();
-      const international = trimmed.startsWith("00") ? `+${trimmed.slice(2)}` : trimmed;
+      const cleaned = raw.replace(/[^0-9+]/g, "").replace(/(?!^)\+/g, "").slice(0, 16);
+      const international = cleaned.startsWith("00") ? `+${cleaned.slice(2)}` : cleaned;
       if (international.startsWith("+")) {
         const parsed = parsePhoneNumberFromString(international);
         if (parsed?.isValid() && parsed.country) {
@@ -81,11 +84,19 @@ export function usePhoneField() {
             getCountryCallingCode(country) === code ? country : (MAIN_COUNTRY[code] ?? parsed.country);
           chosen.current = true;
           setCountryState(next);
-          setNumberState(parsed.formatNational());
+          setNumberState(parsed.nationalNumber);
+          return;
+        }
+      } else if (cleaned.startsWith(getCountryCallingCode(country))) {
+        const parsed = phoneToE164(cleaned, country)
+          ? parsePhoneNumberFromString(cleaned, country)
+          : parsePhoneNumberFromString(`+${cleaned}`);
+        if (parsed?.isValid() && parsed.countryCallingCode === getCountryCallingCode(country)) {
+          setNumberState(parsed.nationalNumber);
           return;
         }
       }
-      setNumberState(raw);
+      setNumberState(cleaned);
     },
     [country],
   );

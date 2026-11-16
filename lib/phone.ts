@@ -64,8 +64,10 @@ export function phoneToE164(national: string, country: CountryCode): string | nu
  */
 export function normalizePhone(input: unknown): { e164: string; display: string } | null {
   if (typeof input !== "string") return null;
-  const trimmed = input.trim();
-  if (!trimmed.startsWith("+") || trimmed.length > 40) return null;
+  // "+" then digits only (spaces allowed): no letters, which the phone library
+  // would otherwise read as keypad digits (e.g. 1-800-FLOWERS).
+  const trimmed = input.replace(/\s/g, "");
+  if (!/^\+[0-9]{6,15}$/.test(trimmed)) return null;
   const parsed = parsePhoneNumberFromString(trimmed);
   if (!parsed?.isValid()) return null;
   return { e164: parsed.number, display: parsed.formatInternational() };
