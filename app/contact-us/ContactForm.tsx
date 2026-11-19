@@ -59,12 +59,17 @@ export default function ContactForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, phone: phone.e164, utm: getUtm() }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to send message");
-      }
+      const data = (await res.json().catch(() => ({}))) as { error?: string; id?: string };
+      if (!res.ok) throw new Error(data?.error || "Failed to send message");
       setStatus("success");
-      trackEvent("form_submission", { form_name: "contact_us" });
+      // event_id = the message's id (Meta de-duplication). tour/tour_name are
+      // cleared because GTM keeps keys from earlier pushes on the same page.
+      trackEvent("form_submission", {
+        form_name: "contact_us",
+        tour: undefined,
+        tour_name: undefined,
+        event_id: data.id,
+      });
       // Its own URL, so a sent message can be counted by page (ads, GA4).
       router.push("/message-sent");
     } catch (err) {

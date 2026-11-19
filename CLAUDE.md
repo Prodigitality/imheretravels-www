@@ -135,6 +135,15 @@ matches `pushState|popstate`; Next.js calls replaceState on every load, so an
 unfiltered History Change double-counts). Both need `ad_storage` consent. The
 ad agency (WaveX) counts conversions by URL: `/enquiry-sent`,
 `/message-sent` and `admin.imheretravels.com/reservation-booking-form/booking-confirmed`.
+Never change these two tags: WaveX's live campaign is built on the PageView.
+
+**Meta events (agreed with WaveX 2026-11-19).** Lead (`form_submission`,
+`form_name` = `tour_enquiry`), Contact (`form_name` = `contact_us`),
+InitiateCheckout (`sale_claim_success`, Black Friday holds) and Purchase
+(`reservation_confirmed`, value + GBP) fire once per action, from separate
+GTM tags that need `ad_storage` consent like the PageView. Each of those
+pushes carries `event_id` (the enquiry, hold or stripePayments doc id, sent
+to Meta as eventID) and `tour_name` where there is a tour (none on contact).
 
 The Base tag sets `fbq.allowDuplicatePageViews = true` (container Version 6,
 2026-11-16). Never remove it: Meta's pixel sends only one PageView per page

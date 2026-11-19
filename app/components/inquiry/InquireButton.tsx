@@ -115,9 +115,16 @@ function InquireSheet({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, phone: phone.e164, tourName, tourSlug, location, utm: getUtm() }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; id?: string };
       if (!res.ok) throw new Error(data.error || "Failed to send your enquiry");
-      trackEvent("form_submission", { form_name: "tour_enquiry", location, tour: tourSlug });
+      // event_id = the enquiry's id, so Meta can de-duplicate the Lead event.
+      trackEvent("form_submission", {
+        form_name: "tour_enquiry",
+        location,
+        tour: tourSlug,
+        tour_name: tourName || undefined,
+        event_id: data.id,
+      });
       router.push(tourSlug ? `/enquiry-sent?tour=${encodeURIComponent(tourSlug)}` : "/enquiry-sent");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

@@ -280,10 +280,13 @@ export function useSaleBooking({
         hold: res.hold,
         tourDate,
       });
+      // event_id = the hold's id, so Meta can de-duplicate InitiateCheckout.
       trackEvent("sale_claim_success", {
         tour: tour.tourSlug,
+        tour_name: res.hold.tourName,
         party_size: partySize,
         checkout_mode: res.hold.checkoutMode,
+        event_id: res.hold.holdId,
       });
       void refresh();
       if (res.hold.checkoutMode === "auto" && !mock) {
