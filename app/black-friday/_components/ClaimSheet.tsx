@@ -168,6 +168,8 @@ function errorCopy(err: ClaimFailure): string {
     }
     case "invalid_request":
       return "Something in the form didn't look right. Check your email address and try again.";
+    case "email_domain":
+      return err.message ?? "We couldn't find that email domain. Please check your email address.";
     case "sale_not_found":
     case "tour_not_in_sale":
       return "This tour is no longer part of the sale.";
@@ -332,6 +334,12 @@ export default function ClaimSheet({
     // On not_enough_slots the parent has already refreshed availability, so the
     // party selector re-clamps itself; the message offers the size that fits.
     // On slots_changed the fresh states bring up the slot-change prompt instead.
+    // A domain that can't take mail is an email-field problem, shown under the field.
+    if (!res.ok && res.error === "email_domain") {
+      setEmailError(res.message ?? "We couldn't find that email domain. Please check your email address.");
+      emailRef.current?.focus();
+      return;
+    }
     if (!res.ok && res.error !== "slots_changed") setError(res);
   }
 

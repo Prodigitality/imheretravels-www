@@ -27,7 +27,7 @@ export type SlotStates = Pick<PublicSlot, "index" | "state">[];
 
 export type ClaimResult =
   | { ok: true; hold: SaleHoldView; holdParam: string }
-  | { ok: false; error: ClaimErrorCode; left?: number; retryAfterS?: number; states?: SlotStates };
+  | { ok: false; error: ClaimErrorCode; left?: number; retryAfterS?: number; states?: SlotStates; /** Customer-facing text, sent with email_domain. */ message?: string };
 
 export type HoldLookup =
   | { ok: true; hold: SaleHoldView }
@@ -48,6 +48,7 @@ const KNOWN_ERRORS: ClaimErrorCode[] = [
   "invalid_request",
   "sale_not_found",
   "tour_not_in_sale",
+  "email_domain",
 ];
 
 export const createLiveSaleApi = (slug: string): SaleApi => ({
@@ -83,6 +84,7 @@ export const createLiveSaleApi = (slug: string): SaleApi => ({
       left: typeof body?.left === "number" ? body.left : undefined,
       retryAfterS: typeof body?.retryAfterS === "number" ? body.retryAfterS : undefined,
       states: Array.isArray(body?.states) ? (body.states as SlotStates) : undefined,
+      message: typeof body?.message === "string" ? body.message.slice(0, 200) : undefined,
     };
   },
 

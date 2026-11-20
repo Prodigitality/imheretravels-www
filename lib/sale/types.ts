@@ -142,5 +142,7 @@ export type ClaimErrorCode =
   | "invalid_request"
   | "sale_not_found"
   | "tour_not_in_sale"
+  /** The email's domain can't take mail (e.g. "gmaill.com"); `message` says so. */
+  | "email_domain"
   | "network"
   | "unknown";
