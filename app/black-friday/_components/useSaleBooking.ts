@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { trackEvent } from "@/lib/analytics/track";
-import { withUtm } from "@/lib/analytics/utm-client";
+import { getUtm, withUtm } from "@/lib/analytics/utm-client";
 import { createLiveSaleApi, type ClaimResult, type SaleApi } from "@/lib/sale/api";
 import {
   AUTO_REDIRECT_DELAY_MS,
@@ -261,6 +261,7 @@ export function useSaleBooking({
       email,
       website,
       shownSlots,
+      utm: getUtm(),
     });
 
     if (res.ok) {

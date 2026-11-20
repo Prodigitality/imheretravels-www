@@ -7,6 +7,7 @@
 import { SALE_API_BASE } from "./config";
 import { splitHoldParam } from "./ladder";
 import type { ClaimErrorCode, PublicSaleAvailability, PublicSlot, SaleHoldView } from "./types";
+import type { Utm } from "@/lib/analytics/utm";
 
 export type ClaimInput = {
   saleId: string;
@@ -17,6 +18,8 @@ export type ClaimInput = {
   website: string;
   /** Slots on screen when Hold was tapped; the claim is refused if one has gone. */
   shownSlots: number[];
+  /** The visit's landing-page UTMs: saved on the hold and shown in the team's hold email. */
+  utm?: Utm | null;
 };
 
 /** Live slot states sent back with a refused claim. */
