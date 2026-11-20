@@ -4,9 +4,11 @@ import { adminDb } from "@/lib/firebase-admin";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { cleanUtm, utmRows } from "@/lib/analytics/utm";
 import { normalizePhone } from "@/lib/phone";
+import { leadEmailTo } from "@/lib/lead-recipients";
 
 export const runtime = "nodejs";
 
+/** The sender: the Gmail account the emails go out from. Recipients: lib/lead-recipients.ts. */
 const CONTACT_RECIPIENT = "bella@imheretravels.com";
 /** Local dev saves to the dev Firestore but doesn't email Bella or touch
  *  Mailchimp unless ENQUIRY_SIDE_EFFECTS_IN_DEV=1 (same switch as /api/enquiry). */
@@ -230,7 +232,7 @@ export async function POST(request: Request) {
       const accessToken = await getAccessToken();
       const raw = toBase64Url(
         buildRawMessage({
-          to: CONTACT_RECIPIENT,
+          to: leadEmailTo(),
           from: `ImHereTravels <${CONTACT_RECIPIENT}>`,
           replyTo: `${fullName} <${email}>`,
           subject,

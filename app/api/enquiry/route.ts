@@ -3,7 +3,7 @@
  *
  * Same fields as the /contact-us form, plus the tour it was opened from.
  * Flow: honeypot → validate → rate limit → Firestore `enquiries` (the lead is
- * saved first) → email to bella@ → optional Mailchimp opt-in. Email and
+ * saved first) → email to the team (lib/lead-recipients.ts) → optional Mailchimp opt-in. Email and
  * Mailchimp are best effort and recorded on the doc, so a Gmail outage never
  * loses a lead.
  *
@@ -19,6 +19,7 @@ import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { cleanUtm, utmRows } from "@/lib/analytics/utm";
 import { normalizePhone } from "@/lib/phone";
+import { leadEmailTo } from "@/lib/lead-recipients";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ const COLLECTION = "enquiries";
 const RATE_COLLECTION = "enquiryRateLimits";
 const LIMIT_PER_IP = { name: "enquiry-ip", max: 8, windowMs: 60 * 60_000 };
 const LIMIT_PER_EMAIL = { name: "enquiry-email", max: 5, windowMs: 60 * 60_000 };
+/** The sender: the Gmail account the emails go out from. */
 const TEAM_EMAIL = "bella@imheretravels.com";
 const SIDE_EFFECTS =
   process.env.NODE_ENV === "production" || process.env.ENQUIRY_SIDE_EFFECTS_IN_DEV === "1";
@@ -172,7 +174,7 @@ export async function POST(request: Request) {
     try {
       await sendGmail(
         {
-          to: TEAM_EMAIL,
+          to: leadEmailTo(),
           from: formatAddress("IHT Website", TEAM_EMAIL),
           replyTo: formatAddress(fullName, email),
           subject,
