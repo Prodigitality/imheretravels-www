@@ -21,6 +21,8 @@ export default function ContactForm() {
     message: "",
     subscribe: false,
     acceptedPrivacy: false,
+    /** Honeypot: only bots fill it; the API then sends nothing. */
+    website: "",
   });
   const phone = usePhoneField();
   const [phoneInvalid, setPhoneInvalid] = useState(false);
@@ -150,6 +152,16 @@ export default function ContactForm() {
           *
         </span>
       </label>
+
+      {/* Honeypot: hidden from people and screen readers. */}
+      <div aria-hidden="true" className="absolute -left-[10000px] top-auto size-px overflow-hidden">
+        <input
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.website}
+          onChange={(e) => update("website", e.target.value)}
+        />
+      </div>
 
       {status === "error" && errorMessage && (
         <p className="font-body text-b2-mobile text-crimson-red md:text-b2-desktop">

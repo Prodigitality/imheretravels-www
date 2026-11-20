@@ -3,7 +3,8 @@
  *
  * Same fields as the /contact-us form, plus the tour it was opened from.
  * Flow: honeypot → validate → rate limit → Firestore `enquiries` (the lead is
- * saved first) → email to the team (lib/lead-recipients.ts) → optional Mailchimp opt-in. Email and
+ * saved first) → branded email to the team (lib/lead-recipients.ts) and a
+ * receipt to the customer (lib/lead-emails.ts) → optional Mailchimp opt-in. Email and
  * Mailchimp are best effort and recorded on the doc, so a Gmail outage never
  * loses a lead.
  *
@@ -14,12 +15,12 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
-import { escapeHtml, formatAddress, getGmailAccessToken, sendGmail } from "@/lib/gmail";
+import { getGmailAccessToken, sendGmail } from "@/lib/gmail";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
-import { cleanUtm, utmRows } from "@/lib/analytics/utm";
+import { cleanUtm } from "@/lib/analytics/utm";
 import { normalizePhone } from "@/lib/phone";
-import { leadEmailTo } from "@/lib/lead-recipients";
+import { buildLeadCustomerEmail, buildLeadTeamEmail, type LeadSummary } from "@/lib/lead-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,8 +29,6 @@ const COLLECTION = "enquiries";
 const RATE_COLLECTION = "enquiryRateLimits";
 const LIMIT_PER_IP = { name: "enquiry-ip", max: 8, windowMs: 60 * 60_000 };
 const LIMIT_PER_EMAIL = { name: "enquiry-email", max: 5, windowMs: 60 * 60_000 };
-/** The sender: the Gmail account the emails go out from. */
-const TEAM_EMAIL = "bella@imheretravels.com";
 const SIDE_EFFECTS =
   process.env.NODE_ENV === "production" || process.env.ENQUIRY_SIDE_EFFECTS_IN_DEV === "1";
 
@@ -141,52 +140,39 @@ export async function POST(request: Request) {
   }
 
   let team = "skipped_dev";
+  let customer = "skipped_dev";
   let mailchimp = subscribe ? "skipped_dev" : "not_requested";
   if (SIDE_EFFECTS) {
-    const subject = tourName ? `Tour Enquiry: ${tourName}` : "New Tour Enquiry";
-    const rows: [string, string][] = [
-      ["Tour", tourName || "Not specified"],
-      ["Name", fullName],
-      ["Email", email],
-      ["Phone", phoneParsed.display],
-      ["Message", message || "(none)"],
-      ["Subscribed to updates", subscribe ? "Yes" : "No"],
-      ...utmRows(utm),
-    ];
-    const tourUrl = tourSlug ? `https://www.imheretravels.com/tours/${tourSlug}` : "";
-    const adminUrl = `https://admin.imheretravels.com/enquiries?id=${ref.id}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #1C1F2A;">
-        <h2 style="margin:0 0 16px 0;">${escapeHtml(subject)}</h2>
-        ${rows
-          .map(([k, v]) =>
-            k === "Email"
-              ? `<p><strong>${k}:</strong> <a href="mailto:${escapeHtml(v)}">${escapeHtml(v)}</a></p>`
-              : `<p><strong>${k}:</strong> ${escapeHtml(v).replace(/\n/g, "<br/>")}</p>`,
-          )
-          .join("\n")}
-        ${tourUrl ? `<p><a href="${tourUrl}">${tourUrl}</a></p>` : ""}
-        <p><a href="${adminUrl}">Open in admin</a></p>
-      </div>`.trim();
-    const text = [...rows.map(([k, v]) => `${k}: ${v}`), tourUrl, `Open in admin: ${adminUrl}`]
-      .filter(Boolean)
-      .join("\n");
+    const lead: LeadSummary = {
+      id: ref.id,
+      form: "tour_enquiry",
+      firstName,
+      fullName,
+      email,
+      phoneDisplay: phoneParsed.display,
+      phoneE164: phone,
+      message,
+      subscribe,
+      tourName: tourName || undefined,
+      tourSlug: tourSlug || undefined,
+      utm,
+    };
+    let token: string | null = null;
     try {
-      await sendGmail(
-        {
-          to: leadEmailTo(),
-          from: formatAddress("IHT Website", TEAM_EMAIL),
-          replyTo: formatAddress(fullName, email),
-          subject,
-          html,
-          text,
-        },
-        await getGmailAccessToken(),
-      );
+      token = await getGmailAccessToken();
+      await sendGmail(buildLeadTeamEmail(lead), token);
       team = "sent";
     } catch (e) {
       team = "failed";
       console.error("[enquiry] team email failed", e);
+    }
+    // The customer's receipt: a copy of what they sent (best effort).
+    try {
+      await sendGmail(buildLeadCustomerEmail(lead), token ?? (await getGmailAccessToken()));
+      customer = "sent";
+    } catch (e) {
+      customer = "failed";
+      console.error("[enquiry] customer receipt failed", e);
     }
     if (subscribe) {
       try {
@@ -199,7 +185,7 @@ export async function POST(request: Request) {
     }
   }
   await ref
-    .update({ emails: { team, at: FieldValue.serverTimestamp() }, mailchimp })
+    .update({ emails: { team, customer, at: FieldValue.serverTimestamp() }, mailchimp })
     .catch((e) => console.error("[enquiry] status update failed", e));
 
   return NextResponse.json({ ok: true, id: ref.id }, { headers: { "Cache-Control": "no-store" } });
