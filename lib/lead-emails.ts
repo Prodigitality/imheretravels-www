@@ -1,6 +1,6 @@
 /**
  * Emails for a tour enquiry ("Inquire now") or a /contact-us message:
- *  - team notification → lib/lead-recipients.ts (bella@ follows up, jay@ at
+ *  - team notification → the recipients set in admin Settings (lib/lead-recipients.ts; bella@ follows up, jay@ at
  *    WaveX follows the ad campaigns). Reply-To is the customer. Subjects stay
  *    "Tour Enquiry: <tour>" / "New Website Enquiry" so inbox filters keep working.
  *  - customer receipt: we've got it, a copy of what they sent, how we'll reply.
@@ -11,7 +11,6 @@
 
 import { escapeHtml, formatAddress, type MailMessage } from "@/lib/gmail";
 import { button, eyebrow, rowsTable, rowsText, shell } from "@/lib/email-layout";
-import { leadEmailTo } from "@/lib/lead-recipients";
 import { utmRows, type Utm } from "@/lib/analytics/utm";
 
 /** The Gmail account the emails go out from (and where customer replies land). */
@@ -51,7 +50,8 @@ function sentRows(s: LeadSummary): [string, string][] {
   ];
 }
 
-export function buildLeadTeamEmail(s: LeadSummary): MailMessage {
+/** `to`: the team recipients, from leadEmailTo() (lib/lead-recipients.ts). */
+export function buildLeadTeamEmail(s: LeadSummary, to: string): MailMessage {
   const isEnquiry = s.form === "tour_enquiry";
   const subject = isEnquiry ? (s.tourName ? `Tour Enquiry: ${s.tourName}` : "New Tour Enquiry") : "New Website Enquiry";
   const tourUrl = tourUrlOf(s);
@@ -91,7 +91,7 @@ ${s.id ? `<p style="margin:12px 0 0 0;font-size:12px;color:#959595;">Reference: 
   ].join("\n");
 
   return {
-    to: leadEmailTo(),
+    to,
     from: formatAddress("IHT Website", LEAD_SENDER),
     replyTo: formatAddress(s.fullName, s.email),
     subject,

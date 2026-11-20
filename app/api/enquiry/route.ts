@@ -21,6 +21,7 @@ import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { cleanUtm } from "@/lib/analytics/utm";
 import { normalizePhone } from "@/lib/phone";
 import { buildLeadCustomerEmail, buildLeadTeamEmail, type LeadSummary } from "@/lib/lead-emails";
+import { leadEmailTo } from "@/lib/lead-recipients";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
     let token: string | null = null;
     try {
       token = await getGmailAccessToken();
-      await sendGmail(buildLeadTeamEmail(lead), token);
+      await sendGmail(buildLeadTeamEmail(lead, await leadEmailTo()), token);
       team = "sent";
     } catch (e) {
       team = "failed";
