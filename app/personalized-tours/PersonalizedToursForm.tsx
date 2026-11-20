@@ -9,6 +9,7 @@ import {
 import { trackEvent } from "@/lib/analytics/track";
 import DatePicker from "./_components/DatePicker";
 import CountrySelect from "@/app/components/global/Dropdown";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -251,6 +252,7 @@ export default function PersonalizedToursForm() {
             placeholder={fields.email.placeholder}
             className={inputClass}
           />
+          <EmailSuggestion email={form.email} onUse={(fixed) => update("email", fixed)} />
         </div>
       </div>
 

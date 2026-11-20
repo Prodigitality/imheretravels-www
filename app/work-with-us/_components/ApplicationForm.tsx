@@ -23,6 +23,7 @@ import {
 } from "@/lib/work-with-us/schema";
 import { trackEvent } from "@/lib/analytics/track";
 import TrackedLink from "./TrackedLink";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 type Values = Record<string, string | string[]>;
 type Status = "idle" | "submitting" | "success" | "error";
@@ -428,6 +429,14 @@ export default function ApplicationForm({
           className={inputClass}
         />
       );
+      if (f.kind === "email") {
+        control = (
+          <>
+            {control}
+            <EmailSuggestion email={String(value ?? "")} onUse={(fixed) => setValue(f.name, fixed)} />
+          </>
+        );
+      }
     }
 
     return (

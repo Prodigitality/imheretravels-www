@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { emailDomainProblem } from "@/lib/email-domain";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 
 export const runtime = "nodejs";
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "Email is required." }, { status: 400 });
   }
+  const domainProblem = await emailDomainProblem(email);
+  if (domainProblem) return NextResponse.json({ error: domainProblem }, { status: 400 });
 
   try {
     await subscribeToMailchimp({ email, firstName, lastName, tag: "Website Newsletter Form" });

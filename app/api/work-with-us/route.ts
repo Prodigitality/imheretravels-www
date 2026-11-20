@@ -15,6 +15,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { emailDomainProblem } from "@/lib/email-domain";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminBucket, adminDb } from "@/lib/firebase-admin";
 import { forms, SUPPLIER_UPLOAD } from "@/data/workWithUs";
@@ -106,6 +107,10 @@ export async function POST(request: Request) {
   if (Object.keys(listErrors).length > 0) {
     return bad("Please check the highlighted fields.", 400, { fieldErrors: listErrors });
   }
+
+  // An email domain that can't take mail (e.g. "gmaill.com") would bounce our reply.
+  const domainProblem = await emailDomainProblem(String(answers.email ?? "").trim().toLowerCase());
+  if (domainProblem) return bad(domainProblem, 400, { fieldErrors: { email: domainProblem } });
 
   // Optional supplier document.
   const fileEntry = form.get(cfg.upload?.name ?? "__none__");

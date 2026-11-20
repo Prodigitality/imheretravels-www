@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics/track";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -72,6 +73,7 @@ export default function NewsletterForm({
         placeholder="Enter your email"
         className="w-full rounded-full border border-grey bg-white px-5 py-3 font-body text-b4-desktop text-midnight placeholder:text-grey focus:border-crimson-red focus:outline-none"
       />
+      <EmailSuggestion email={email} onUse={setEmail} />
       <p className="font-body text-b4-desktop text-grey">
         By submitting you agree with our{" "}
         <Link href="/privacy-policy" className="underline hover:text-crimson-red">

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { emailDomainProblem } from "@/lib/email-domain";
 import { subscribeToMailchimp } from "@/lib/mailchimp";
 
 export const runtime = "nodejs";
@@ -153,6 +154,9 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  const domainProblem = await emailDomainProblem(email);
+  if (domainProblem) return NextResponse.json({ error: domainProblem }, { status: 400 });
 
   const fullName = `${firstName} ${lastName}`.trim();
   const subject = "New Personalized Tour Inquiry";

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { joinForm } from "@/data/joinOurCommunity";
 import { trackEvent } from "@/lib/analytics/track";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -82,6 +83,7 @@ export default function JoinCommunityForm() {
         placeholder={joinForm.fields.email}
         className={inputClass}
       />
+      <EmailSuggestion email={form.email} onUse={(fixed) => update("email", fixed)} />
 
       {/* First + Last name */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

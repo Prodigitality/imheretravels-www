@@ -26,6 +26,7 @@ import {
 } from "@/lib/sale/ladder";
 import type { ClaimResult } from "@/lib/sale/api";
 import type { PublicSlot, PublicTourAvailability, SaleHoldView, SalePageTour } from "@/lib/sale/types";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 export type ActiveHold = {
   hold: SaleHoldView;
@@ -793,6 +794,7 @@ export default function ClaimSheet({
                 emailError ? "border-crimson-red" : "border-light-grey"
               }`}
             />
+            <EmailSuggestion email={email} onUse={(fixed) => { setEmail(fixed); if (emailError) setEmailError(null); }} />
             {emailError && (
               <p id={emailErrId} className="mt-2 font-body text-b4-mobile font-medium text-crimson-red md:text-b4-desktop">
                 {emailError}
