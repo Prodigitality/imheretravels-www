@@ -8,6 +8,7 @@ import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
 import { getUtm } from "@/lib/analytics/utm-client";
 import PhoneField, { usePhoneField } from "@/app/components/global/PhoneField";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 /** Where the button sits, sent with the enquiry and the analytics event. */
 export type InquireLocation = "sale_card" | "tour_page" | "tour_page_top" | "tour_mobile_bar";
@@ -183,16 +184,19 @@ function InquireSheet({
             className={input}
           />
         </div>
-        <input
-          type="email"
-          aria-label="Email"
-          autoComplete="email"
-          required
-          value={form.email}
-          onChange={(e) => update("email", e.target.value)}
-          placeholder={contactForm.fields.email}
-          className={input}
-        />
+        <div>
+          <input
+            type="email"
+            aria-label="Email"
+            autoComplete="email"
+            required
+            value={form.email}
+            onChange={(e) => update("email", e.target.value)}
+            placeholder={contactForm.fields.email}
+            className={input}
+          />
+          <EmailSuggestion email={form.email} onUse={(fixed) => update("email", fixed)} />
+        </div>
         <PhoneField phone={phone} inputClass={input} placeholder={contactForm.fields.phone} invalid={phoneInvalid} />
         <textarea
           aria-label="Message (optional)"

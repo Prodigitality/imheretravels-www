@@ -18,6 +18,7 @@ import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { cleanUtm } from "@/lib/analytics/utm";
 import { normalizePhone } from "@/lib/phone";
+import { emailDomainProblem } from "@/lib/email-domain";
 import { buildLeadCustomerEmail, buildLeadTeamEmail, type LeadSummary } from "@/lib/lead-emails";
 import { leadEmailTo } from "@/lib/lead-recipients";
 
@@ -70,6 +71,9 @@ export async function POST(request: Request) {
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
+  // A domain that can't take mail (e.g. "gmaill.com") means a message we can't answer.
+  const domainProblem = await emailDomainProblem(email);
+  if (domainProblem) return NextResponse.json({ error: domainProblem }, { status: 400 });
 
   // Full international number (the form's country picker adds the code), so
   // the team can follow up on WhatsApp.

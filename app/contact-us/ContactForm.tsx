@@ -7,6 +7,7 @@ import { contactForm } from "@/data/contactUs";
 import { trackEvent } from "@/lib/analytics/track";
 import { getUtm } from "@/lib/analytics/utm-client";
 import PhoneField, { usePhoneField } from "@/app/components/global/PhoneField";
+import EmailSuggestion from "@/app/components/global/EmailSuggestion";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -104,14 +105,17 @@ export default function ContactForm() {
         />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <input
-          type="email"
-          required
-          value={form.email}
-          onChange={(e) => update("email", e.target.value)}
-          placeholder={contactForm.fields.email}
-          className={inputClass}
-        />
+        <div>
+          <input
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => update("email", e.target.value)}
+            placeholder={contactForm.fields.email}
+            className={inputClass}
+          />
+          <EmailSuggestion email={form.email} onUse={(fixed) => update("email", fixed)} />
+        </div>
         <PhoneField phone={phone} inputClass={inputClass} placeholder={contactForm.fields.phone} invalid={phoneInvalid} />
       </div>
       <textarea

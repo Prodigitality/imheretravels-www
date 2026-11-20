@@ -20,6 +20,7 @@ import { subscribeToMailchimp } from "@/lib/mailchimp";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { cleanUtm } from "@/lib/analytics/utm";
 import { normalizePhone } from "@/lib/phone";
+import { emailDomainProblem } from "@/lib/email-domain";
 import { buildLeadCustomerEmail, buildLeadTeamEmail, type LeadSummary } from "@/lib/lead-emails";
 import { leadEmailTo } from "@/lib/lead-recipients";
 
@@ -92,6 +93,9 @@ export async function POST(request: Request) {
   }
   const phone = phoneParsed.e164;
   if (!EMAIL_RE.test(email)) return bad("Please enter a valid email address.");
+  // A domain that can't take mail (e.g. "gmaill.com") means a lead we can't answer.
+  const domainProblem = await emailDomainProblem(email);
+  if (domainProblem) return bad(domainProblem);
   if (p.acceptedPrivacy !== true) return bad("Please accept our privacy policy to continue.");
 
   const ip = clientIp(request);
