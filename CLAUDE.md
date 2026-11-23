@@ -180,7 +180,10 @@ Meta's own "Conversions API with Meta", which Meta connects from its side and
 which copies the pixel's browser events (confirmed with WaveX 2026-11-13).
 We have no Conversions API of our own, and nothing needs deduplicating.
 
-GTM only loads when `NEXT_PUBLIC_GTM_ID` is set (off in local dev). To test a
+GTM only loads when `NEXT_PUBLIC_GTM_ID` is set (off in local dev). Production
+builds on Vercel fail on purpose without it (`next.config.ts`, same in admin),
+since a build without it silently drops GTM, the cookie banner and the pixel
+(happened after the hosting move, 2026-11-23). To test a
 tag in Tag Assistant Preview locally, put `NEXT_PUBLIC_GTM_ID=GTM-K29G5GPR`
 in a gitignored `.env.local`, accept analytics in the cookie banner, and
 remove the file afterwards so local clicks stay out of GA4.

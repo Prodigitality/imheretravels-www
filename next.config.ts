@@ -3,6 +3,22 @@ import { fileURLToPath } from "node:url";
 import { getAllTourSlugs } from "./data/tours";
 import publicAssets from "./data/public-assets.json";
 
+// Safeguard: without NEXT_PUBLIC_GTM_ID a build ships with no Tag Manager, no
+// cookie banner and no Meta pixel, and nothing else looks wrong. That happened
+// after the hosting move on 2026-11-23 and cost the ads most of a day of
+// tracking. Fail production builds on Vercel instead, so the live site stays on
+// the previous deployment. Local and preview builds are unaffected.
+if (
+  process.env.VERCEL_ENV === "production" &&
+  !/^GTM-[A-Z0-9]+$/.test(process.env.NEXT_PUBLIC_GTM_ID ?? "")
+) {
+  throw new Error(
+    "Production build stopped: NEXT_PUBLIC_GTM_ID is missing or invalid. " +
+      "Add it in Vercel (Settings > Environment Variables > Production) and redeploy. " +
+      "Without it the site has no Tag Manager, cookie banner or Meta pixel.",
+  );
+}
+
 const nextConfig: NextConfig = {
   // Pin the workspace root so Next.js doesn't infer it from the stray
   // lockfile at C:\Users\August\Desktop\Code\package-lock.json.
