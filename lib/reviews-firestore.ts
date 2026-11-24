@@ -17,6 +17,11 @@ import { cache } from "react";
 import { Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { isExternalSource, REVIEW_CATEGORIES } from "@/types/review";
+import {
+  getActiveTourSlugById,
+  getAllTourSlugs,
+  getCurrentSlugForPreviousSlug,
+} from "@/lib/tours-firestore";
 import type {
   CategoryAggregate,
   CategoryRatings,
@@ -75,6 +80,44 @@ function toPublicReview(id: string, raw: RawDoc): PublicReview {
   };
 }
 
+/**
+ * Where a review's tour name should link, or undefined when the tour has no
+ * live page any more.
+ *
+ * A review keeps its tour's id, slug and name after the tour is deleted or
+ * archived (reviews are never removed with the tour), but /tours/{slug} only
+ * exists for active tours. Resolution order: the tour id (follows renames),
+ * then the stored slug if an active tour still uses it, then a previous slug
+ * that redirects to an active tour.
+ */
+async function resolveTourHref(raw: RawDoc): Promise<string | undefined> {
+  const tourId = typeof raw.tourId === "string" ? raw.tourId : "";
+  const tourSlug = typeof raw.tourSlug === "string" ? raw.tourSlug : "";
+  const [slugById, activeSlugs] = await Promise.all([
+    getActiveTourSlugById(),
+    getAllTourSlugs(),
+  ]);
+  if (tourId && slugById[tourId]) return `/tours/${slugById[tourId]}`;
+  if (!tourSlug) return undefined;
+  if (activeSlugs.includes(tourSlug)) return `/tours/${tourSlug}`;
+  const current = await getCurrentSlugForPreviousSlug(tourSlug);
+  return current ? `/tours/${current}` : undefined;
+}
+
+/** Project review docs and attach each one's live tour link. */
+async function toPublicReviews(
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
+): Promise<PublicReview[]> {
+  return Promise.all(
+    docs.map(async (d) => {
+      const raw = d.data();
+      const review = toPublicReview(d.id, raw);
+      const tourHref = await resolveTourHref(raw);
+      return tourHref ? { ...review, tourHref } : review;
+    }),
+  );
+}
+
 /** Newest first: real timestamps sort by createdAt; migrated rows fall back to 0. */
 function byNewest(a: PublicReview, b: PublicReview): number {
   return b.createdAt - a.createdAt;
@@ -89,7 +132,7 @@ export const getReviewsForTour = cache(
       .where("tourSlug", "==", tourSlug)
       .where("status", "==", "published")
       .get();
-    return snap.docs.map((d) => toPublicReview(d.id, d.data())).sort(byNewest);
+    return (await toPublicReviews(snap.docs)).sort(byNewest);
   },
 );
 
@@ -167,7 +210,7 @@ export const getAllPublishedReviews = cache(
       .where("status", "==", "published")
       .limit(HUB_SCAN_LIMIT)
       .get();
-    return snap.docs.map((d) => toPublicReview(d.id, d.data())).sort(byNewest);
+    return (await toPublicReviews(snap.docs)).sort(byNewest);
   },
 );
 

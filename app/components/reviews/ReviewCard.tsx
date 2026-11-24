@@ -114,14 +114,21 @@ export default function ReviewCard({
     />
   );
 
-  const tourLink = showTour && review.tourName && (
-    <Link
-      href={`/tours/${review.tourSlug}`}
-      className="font-body text-b4-desktop text-crimson-red underline"
-    >
-      {review.tourName}
-    </Link>
-  );
+  // A review outlives its tour: once the tour is deleted or archived its page
+  // is gone, so show the name without a link rather than linking to a 404.
+  const tourLink =
+    showTour &&
+    review.tourName &&
+    (review.tourHref ? (
+      <Link
+        href={review.tourHref}
+        className="font-body text-b4-desktop text-crimson-red underline"
+      >
+        {review.tourName}
+      </Link>
+    ) : (
+      <span className="font-body text-b4-desktop text-dark-gray">{review.tourName}</span>
+    ));
 
   const reviewer = (
     <div className={`${isModal ? "" : "mt-auto"} flex items-center gap-4 pt-2`}>

@@ -112,6 +112,13 @@ export interface PublicReview {
   id: string;
   tourSlug: string;
   tourName: string;
+  /**
+   * The tour's live page (`/tours/{current slug}`), or undefined when the tour
+   * no longer has one (deleted, archived or draft). Review cards link the tour
+   * name only when this is set, so a review of a removed tour never links to a
+   * 404. Resolved server-side in lib/reviews-firestore.ts.
+   */
+  tourHref?: string;
   rating: number;
   categoryRatings?: CategoryRatings;
   title?: string;
