@@ -167,6 +167,19 @@ Black Friday auto-redirect in `useSaleBooking`); a link that already has any
 (`stripePayments` doc, field `utm`). Admin → Enquiries shows them as
 "Campaign (UTM)".
 
+**Cookie-free visit counter (2026-11-26).** GA4 and the Meta pixel only see
+visitors who accept cookies, so `VisitCounter` (root layout) posts to
+`/api/visit` whatever the cookie choice. It sets no cookies and stores nothing
+on the device (in-memory state, one page load). The route keeps only daily
+totals in Firestore `siteVisitStats`: one doc per UK day, UTM source and UTM
+campaign, with `visits`, `saleVisits` (viewed the sale page), `saleThenTour`
+(then opened a tour page) and `saleSeconds` / `saleTimed` (average time on the
+sale page). No IP, user agent or URL is stored. Writes happen only on Vercel
+production (elsewhere the route logs `[visit] would count`), only from
+imheretravels.com pages, and automated browsers (`navigator.webdriver`) and
+bot user agents are skipped. To test locally with DevTools automation, override
+`navigator.webdriver` to false first.
+
 **Phone numbers on leads.** The enquiry and contact forms use `PhoneField`
 (`app/components/global/PhoneField.tsx`): a country code dropdown with flags,
 UK and Ireland first, defaulting to the visitor's country from `/api/geo`

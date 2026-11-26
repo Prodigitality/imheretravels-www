@@ -9,6 +9,7 @@ import GoogleTagManager, {
 import ConsentModeDefault from "@/app/components/global/ConsentModeDefault";
 import ConsentBanner from "@/app/components/global/ConsentBanner";
 import UtmCapture from "@/app/components/global/UtmCapture";
+import VisitCounter from "@/app/components/global/VisitCounter";
 import { getAllTours, getHostedTours } from "@/lib/tours-firestore";
 import { getAllHosts } from "@/lib/resident-hosts-firestore";
 import { getAllDestinations } from "@/lib/destinations-firestore";
@@ -231,6 +232,7 @@ export default async function RootLayout({
         <GoogleTagManagerNoScript />
         <GoogleTagManager />
         <UtmCapture />
+        <VisitCounter salePath={salePath} />
         <Header
           tourLinks={tourLinks}
           hostedTourLinks={hostedTourLinks}
