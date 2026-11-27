@@ -10,9 +10,12 @@ import { cleanUtm } from "@/lib/analytics/utm";
  * posts here on page changes, whatever the cookie choice: it sets no cookies
  * and stores nothing on the device.
  *
- * Only daily totals are kept: one `siteVisitStats` doc per UK day, UTM source
- * and UTM campaign, holding counters. No IP address, user agent, URL or other
- * per-visitor detail is stored.
+ * Only hourly totals are kept: one `siteVisitStats` doc per UTC hour, UTM
+ * source and UTM campaign, holding counters. No IP address, user agent, URL or
+ * other per-visitor detail is stored. Hours let a report cut days in any time
+ * zone; `day` is the Manila date, because the Meta ad account (and GA4) report
+ * in Manila time. Docs written before 27 Nov 2026 have no `hour` and a UK-time
+ * `day` (admin's Website visits report explains those two days).
  *
  * Counters (a "visit" is one page load; moving between pages without a reload
  * stays in the same visit):
@@ -46,9 +49,9 @@ function fromOurSite(request: Request): boolean {
   }
 }
 
-function ukDay(date = new Date()): string {
+function manilaDay(date: Date): string {
   // en-CA formats as YYYY-MM-DD.
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(date);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(date);
 }
 
 export async function POST(request: Request) {
@@ -79,12 +82,14 @@ export async function POST(request: Request) {
     if (body.first === true) update.saleTimed = FieldValue.increment(1);
   }
 
-  const day = ukDay();
+  const now = new Date();
+  const hour = now.toISOString().slice(0, 13); // UTC hour, e.g. 2026-11-27T05
+  const day = manilaDay(now);
   const key = createHash("sha1").update(`${source}\n${campaign}`).digest("hex").slice(0, 16);
-  const docId = `${day}_${key}`;
+  const docId = `h_${hour}_${key}`;
 
   if (process.env.VERCEL_ENV !== "production") {
-    console.log("[visit] would count", docId, { day, source, campaign, event, s: body.s, first: body.first });
+    console.log("[visit] would count", docId, { hour, day, source, campaign, event, s: body.s, first: body.first });
     return noContent();
   }
 
@@ -95,7 +100,15 @@ export async function POST(request: Request) {
       .collection(COLLECTION)
       .doc(docId)
       .set(
-        { day, source, campaign, ...update, updatedAt: FieldValue.serverTimestamp() },
+        {
+          hour,
+          day,
+          timeZone: "Asia/Manila",
+          source,
+          campaign,
+          ...update,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
         { merge: true },
       );
   } catch (error) {

@@ -170,10 +170,13 @@ Black Friday auto-redirect in `useSaleBooking`); a link that already has any
 **Cookie-free visit counter (2026-11-26).** GA4 and the Meta pixel only see
 visitors who accept cookies, so `VisitCounter` (root layout) posts to
 `/api/visit` whatever the cookie choice. It sets no cookies and stores nothing
-on the device (in-memory state, one page load). The route keeps only daily
-totals in Firestore `siteVisitStats`: one doc per UK day, UTM source and UTM
-campaign, with `visits`, `saleVisits` (viewed the sale page), `saleThenTour`
-(then opened a tour page) and `saleSeconds` / `saleTimed` (average time on the
+on the device (in-memory state, one page load). The route keeps only hourly
+totals in Firestore `siteVisitStats`: one doc per UTC hour (`hour`), UTM source
+and UTM campaign, with `day` = the Manila date, since the Meta ad account and
+GA4 report in Manila time (docs from before 27 Nov 2026 have no `hour` and a
+UK-time `day`). Admin shows them in Reports → Website visits. Counters:
+`visits`, `saleVisits` (viewed the sale page), `saleThenTour` (then opened a
+tour page) and `saleSeconds` / `saleTimed` (average time on the
 sale page). No IP, user agent or URL is stored. Writes happen only on Vercel
 production (elsewhere the route logs `[visit] would count`), only from
 imheretravels.com pages, and automated browsers (`navigator.webdriver`) and
